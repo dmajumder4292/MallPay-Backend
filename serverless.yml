@@ -1,0 +1,348 @@
+custom:
+  secrets: ${file(secrets.json)}
+
+service: mallpay-backend
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  environment:
+    JWT_SECRET: ${self:custom.secrets.JWT_SECRET}
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    USER_TABLE: ${self:service}-${opt:stage, self:provider.stage}-users
+    LOCATION_TABLE: ${self:service}-${opt:stage, self:provider.stage}-locations
+    MALL_TABLE: ${self:service}-${opt:stage, self:provider.stage}-malls
+    OFFER_TABLE: ${self:service}-${opt:stage, self:provider.stage}-offers
+    BRAND_TABLE: ${self:service}-${opt:stage, self:provider.stage}-brands
+    VOUCHER_TABLE: ${self:service}-${opt:stage, self:provider.stage}-vouchers
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.USER_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.LOCATION_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.MALL_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.OFFER_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.BRAND_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.VOUCHER_TABLE}"
+
+functions:
+  verify-token:
+    handler: authorize.handler
+
+  create:
+    handler: todos/create.create
+    events:
+      - http:
+          path: todos
+          method: post
+          cors: true
+
+  list:
+    handler: todos/list.list
+    events:
+      - http:
+          path: todos
+          method: get
+          cors: true
+          authorizer:
+            name: verify-token
+            identitySource: method.request.header.Authorization 
+            resultTtlInSeconds: 3600 # cache the result for 1 hour
+
+  # get:
+  #   handler: todos/get.get
+  #   events:
+  #     - http:
+  #         path: todos/{id}
+  #         method: get
+  #         cors: true
+
+  # update:
+  #   handler: todos/update.update
+  #   events:
+  #     - http:
+  #         path: todos/{id}
+  #         method: put
+  #         cors: true
+
+  # delete:
+  #   handler: todos/delete.delete
+  #   events:
+  #     - http:
+  #         path: todos/{id}
+  #         method: delete
+  #         cors: true
+
+  register:
+    handler: user.register
+    events:
+      - http:
+          path: user/register
+          method: post
+          cors: true
+
+  login:
+    handler: user.login
+    events:
+      - http:
+          path: user/login
+          method: post
+          cors: true
+
+  addLocation:
+    handler: location.create
+    events:
+      - http:
+          path: location/add
+          method: post
+          cors: true
+
+  listLocations:
+    handler: location.list
+    events:
+      - http:
+          path: location
+          method: get
+          cors: true
+
+  addMall:
+    handler: malls.create
+    events:
+      - http:
+          path: mall
+          method: post
+          cors: true
+
+  listMalls:
+    handler: malls.list
+    events:
+      - http:
+          path: mall
+          method: get
+          cors: true
+
+  addOffer:
+    handler: offers.create
+    events:
+      - http:
+          path: offer
+          method: post
+          cors: true
+
+  listOffers:
+    handler: offers.list
+    events:
+      - http:
+          path: offer
+          method: get
+          cors: true
+
+  addBrand:
+    handler: brands.create
+    events:
+      - http:
+          path: brand
+          method: post
+          cors: true
+
+  listBrands:
+    handler: brands.list
+    events:
+      - http:
+          path: brand
+          method: get
+          cors: true
+
+  addVoucher:
+    handler: vouchers.create
+    events:
+      - http:
+          path: voucher
+          method: post
+          cors: true
+
+  listVouchers:
+    handler: vouchers.list
+    events:
+      - http:
+          path: voucher
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    TodosDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+
+    UsersTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: email
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.USER_TABLE}
+
+    LocationsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: location
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: location
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.LOCATION_TABLE}
+
+    MallsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.MALL_TABLE}
+
+    OffersTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.OFFER_TABLE}
+    
+    BrandsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.BRAND_TABLE}
+
+    VouchersTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.VOUCHER_TABLE}
