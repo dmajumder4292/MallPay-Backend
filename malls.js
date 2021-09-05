@@ -14,9 +14,15 @@ module.exports.create = (event, context, callback) => {
     Item: {
       id: uuid.v1(), 
       name: data.name,
-      state: data.state,
-      image: data.image,
-      createdAt: timestamp
+      city: data.city,
+      numStores: data.numStores,
+      parkingCap: data.parkingCap,
+      parkingDis: data.parkingDis,
+      email: data.email,
+      phone: data.phone,
+      image: data.url,
+      createdAt: timestamp,
+      updatedAt: timestamp
     },
   };
 
